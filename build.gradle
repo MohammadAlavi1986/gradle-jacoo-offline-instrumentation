@@ -1,0 +1,78 @@
+plugins {
+  id 'java'
+}
+
+repositories {
+  mavenCentral()
+}
+
+
+ext {
+    powerMockVersion = "2.0.2"
+}
+
+dependencies {
+  testImplementation 'junit:junit:4.12'
+  testImplementation 'org.assertj:assertj-core:3.13.2'
+  testImplementation "org.powermock:powermock-module-junit4:${powerMockVersion}"
+  testImplementation "org.powermock:powermock-core:${powerMockVersion}"
+  testImplementation "org.powermock:powermock-api-mockito2:${powerMockVersion}"
+}
+
+configurations {
+    jacoco
+    jacocoRuntime
+}
+
+dependencies {
+    jacoco group: 'org.jacoco', name: 'org.jacoco.ant', version: '0.8.4', classifier: 'nodeps'
+    jacocoRuntime group: 'org.jacoco', name: 'org.jacoco.agent', version: '0.8.4', classifier: 'runtime'
+}
+
+
+task instrument(dependsOn: ['classes']) {
+    ext.outputDir = buildDir.path + '/classes-instrumented'
+    doLast {
+        ant.taskdef(name: 'instrument',
+                classname: 'org.jacoco.ant.InstrumentTask',
+                classpath: configurations.jacoco.asPath)
+        ant.instrument(destdir: outputDir) {
+            sourceSets.main.output.classesDirs.each { fileset(dir: it) }
+        }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    if (graph.hasTask(instrument)) {
+        tasks.withType(Test) {
+            doFirst {
+                systemProperty 'jacoco-agent.destfile', buildDir.path + '/jacoco/tests.exec'
+                classpath = files(instrument.outputDir) + classpath + configurations.jacocoRuntime
+            }
+        }
+    }
+}
+
+task report(dependsOn: ['instrument', 'test']) {
+    doLast {
+        ant.taskdef(name: 'report',
+                classname: 'org.jacoco.ant.ReportTask',
+                classpath: configurations.jacoco.asPath)
+        ant.report() {
+            executiondata {
+                ant.file(file: buildDir.path + '/jacoco/tests.exec')
+            }
+            structure(name: 'Example') {
+                classfiles {
+                    sourceSets.main.output.classesDirs.each { fileset(dir: it) }
+                }
+                sourcefiles {
+                    fileset(dir: 'src/main/java')
+                    //uncomment this if you use groovy
+                    //fileset(dir: 'src/main/groovy')
+                }
+            }
+            html(destdir: buildDir.path + '/reports/jacoco')
+        }
+    }
+}
