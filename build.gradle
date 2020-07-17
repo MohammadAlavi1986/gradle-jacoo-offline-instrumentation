@@ -1,9 +1,9 @@
 plugins {
-  id 'java'
+    id 'java'
 }
 
 repositories {
-  mavenCentral()
+    mavenCentral()
 }
 
 
@@ -12,11 +12,14 @@ ext {
 }
 
 dependencies {
-  testImplementation 'junit:junit:4.12'
-  testImplementation 'org.assertj:assertj-core:3.13.2'
-  testImplementation "org.powermock:powermock-module-junit4:${powerMockVersion}"
-  testImplementation "org.powermock:powermock-core:${powerMockVersion}"
-  testImplementation "org.powermock:powermock-api-mockito2:${powerMockVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:5.6.2"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.6.2"
+    testRuntimeOnly "org.junit.vintage:junit-vintage-engine:5.6.2"
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.assertj:assertj-core:3.13.2'
+    testImplementation "org.powermock:powermock-module-junit4:${powerMockVersion}"
+    testImplementation "org.powermock:powermock-core:${powerMockVersion}"
+    testImplementation "org.powermock:powermock-api-mockito2:${powerMockVersion}"
 }
 
 configurations {
@@ -29,6 +32,9 @@ dependencies {
     jacocoRuntime group: 'org.jacoco', name: 'org.jacoco.agent', version: '0.8.4', classifier: 'runtime'
 }
 
+test {
+    useJUnitPlatform()
+}
 
 task instrument(dependsOn: ['classes']) {
     ext.outputDir = buildDir.path + '/classes-instrumented'
